@@ -1,0 +1,7 @@
+The most common algorithms:
+
+traversals, divide and conquer, breadth-first search vs. depth-first search
+
+some Operating System topics:
+
+ code performance: e.g. memory management, processes, threads, synchronization, paging and multithreading

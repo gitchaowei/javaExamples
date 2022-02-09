@@ -1,0 +1,40 @@
+Concurrency:
+    •	Provide a Runnable object: (new Thread (new RunnerableClass())).start();
+    •	Subclass Thread implemting run() interface:(new threadsub()).start();
+
+Thread.sleep(): sleep current thread
+Thread.interrupted():stop what it is doing and do something else
+t.join(): causes the current thread to pause execution until t's thread terminates
+
+Mutual Exclusive helps keep threads from interfering with one another while sharing data. It can be achieved by using the following three ways:
+    •	By Using Synchronized Method
+    •	By Using Synchronized Block
+    •	By Using Static Synchronization
+Inter-thread communication is all about allowing synchronized threads to communicate with each other by:
+    •	wait(), notified by notify() or notifyAll().
+    •	notify()
+    •	notifyAll()
+Concurrent APIs:
+    •	ConcurrentHashMap
+    •	ConcurrentSkipListMap
+    •	ConcurrentSkipListSet
+    •	ArrayBlockingQueue
+    •	PriorityBlockingQueue
+    •	LinkedBlockingQueue
+    •	DelayQueue
+    •	PriorityBlockingDeque
+    •	CopyOnWriteArrayList
+    •	CopyOnWriteArraySet
+Synchronized collection APIs:
+    •	Collections.synchronizedCollection(Collection <T> c)
+    •	Collections.synchronizedList(new ArrayList<String>())
+    •	Collections.synchronizedSet(new HashSet<String>())
+    •	Collections.synchronizedSortedSet(SortedSet<T> s)
+    •	Collections.synchronizedMap(new HashMap<Integer, String>())
+    •	Collections.synchronizedSortedMap(SortedMap<K,V> m)
+    •	Thread safe collections: Vector, HashTable, Stack
+Concurrent Atomic package (java.util.concurrent.atomic) on single variables. .get() value is similar to volatile
+    •	AtomicInteger
+    •	AtomicBoolean
+    •	AtomicLong
+    •	AtomicReference

@@ -1,0 +1,113 @@
+Annotation Notes:
+
+@override : is to make sure to override A1 method{} not to create another a1 method()
+@SuppressWarning("unchecked") :
+@Deprecated : a method is no long used
+@FunctionalInterface : for interface having only one method (error when having two or more methods
+
+To define own annotation @SmartPhone:
+
+// Marker Annotation
+// Single value Annotation
+// Multi
+
+@Inherited  // for the @SmartPhone annotation to be used for extended classes
+@Documented
+@Target(ElementType.TYPE)  // class type to be used or  CONSTRUCTOR or FIELD
+@Retention(RetentionPolicy.RUNTIME // when to be used, SOURCE or CLASS
+@Interface SmartPhone {
+    String os() default "Symbian";
+    in version() default 1;
+}
+
+//@SmartPhone(os="Android", version=6)
+@SmartPhone  //use default values of os and version
+class NokiaSeries {
+    String model;
+    int size;
+
+    public NokiaSeries (String model, int size) {
+         // constructor
+    }
+}
+
+// Annotation use example
+
+// Spring Core Annotation
+// Dependency injection in Maven project
+1. Create a Maven project
+2. POM.XML: add Spring Context
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>4.1.9RELEASE</version>
+    </dependency>
+
+3. Create a class in src/main/java
+  @Component
+  public class Samsung {
+    // have another class reference, which is another Bean defined
+    // object is Autowired
+    @Autowired  // autowired by class type
+    MobileProcessor cpu;
+    // add getter and setter
+    ...
+
+    public void config() {
+        System.out.println("Octa Core, 4 gb ram, 12mp camera");
+        cpu.process();
+    }
+  }
+// or another class implements a interface
+@Component              // default name is "snapdragon"
+public class Snapdragon implements MobileProcessor {
+    public void process() {
+        System.out.println("World best CPU");
+    }
+}
+public interface MobileProcessor (
+   public void process() ;
+}
+
+// create one more class implements MobileProcessor. so we have two MobileProcessor
+// so need to add @Primary at class def or use @Qualifier("mediaTek") or @Qualifier("mediaTek")
+// at @Autowired to eliminate confusion
+@Component
+public class MediaTek implements MobileProcessor {
+    public void process() {
+        System.out.println("World 2nd best CPU");
+    }
+}
+
+
+4. Create a configuration class AppConfig
+//@Configuration
+//public class AppConfig {
+//    @Bean
+//    public Samsung getPhone() {
+//        return new Samsung();
+//    }
+//    @Bean  //for another class
+//    public MobileProcessor getProcessor(){
+//        return new Snapdragon();
+//    }
+//}
+// alternatively: add @ComponentScan and delete all @Bean
+@Configuration
+@ComponentScan(basePackages="com.telusko.SpringAnno")
+public class AppConfig {     }
+
+
+5. Create a main() class in src/main/java to use config()
+public class App {
+    public static void main(String[] args) {
+        // pass in the config class
+        ApplicationContext factory = AnnotationApplicationContext(AppConfig.class);
+        Samsung s7 = factory.getBean(Samsung.class);
+        // above two line is equivalent to :
+        // Samsung s7 = new Samsung();
+        s7.config();
+    }
+}
+
+
