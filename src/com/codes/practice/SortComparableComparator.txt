@@ -1,0 +1,98 @@
+Coase 1: Put Comparable and Comparator interface implementation in a same class:
+    public class Student implements Comparable<Student> {
+
+        String name;
+        int age;
+
+        public Student(String name, int age) {
+           this.name = name;
+           this.age = age;
+        }
+
+        @Override
+        public String toString() {
+            return name + ":" + age;
+        }
+
+        @Override
+        public int compareTo(Student o) {
+            return Comparators.NAME.compare(this, o);
+        }
+
+
+        public static class Comparators {
+
+            public static Comparator<Student> NAME = new Comparator<Student>() {
+                @Override
+                public int compare(Student o1, Student o2) {
+                    return o1.name.compareTo(o2.name);
+                }
+            };
+            public static Comparator<Student> AGE = new Comparator<Student>() {
+                @Override
+                public int compare(Student o1, Student o2) {
+                    return o1.age - o2.age;
+                }
+            };
+            public static Comparator<Student> NAMEANDAGE = new Comparator<Student>() {
+                @Override
+                public int compare(Student o1, Student o2) {
+                    int i = o1.name.compareTo(o2.name);
+                    if (i == 0) {
+                        i = o1.age - o2.age;
+                    }
+                    return i;
+                }
+            };
+        }
+    }
+
+    Usage:
+    List<Student> studentList = new LinkedList<>();
+    Collections.sort(studentList); // sort by compareTo() from COmparable interface
+    Collections.sort(studentList, Student.Comparators.NAME); // Sort by NAME
+    Collections.sort(studentList, Student.Comparators.AGE); // Sort by AGE
+    Collections.sort(studentList, Student.Comparators.NAMEANDAGE); // Sort by NAMEANDAGE
+
+
+    Inner class can be simplified as:
+    public static class Comparators {
+        public static final Comparator<Student> NAME = (Student o1, Student o2) -> o1.name.compareTo(o2.name);
+        public static final Comparator<Student> AGE = (Student o1, Student o2) -> Integer.compare(o1.age, o2.age);
+        public static final Comparator<Student> NAMEANDAGE = (Student o1, Student o2) -> NAME.thenComparing(AGE).compare(o1, o2);
+    }
+
+    Case 2: Simplifest
+
+    Collections.sort(listOfStudent,new Comparator<Student>(){
+                         public int compare(Student s1,Student s2){
+                               // Write your logic here.
+                         }});
+
+
+    Collections.sort(students, new Comparator<Student>() {
+                     public int compare(Student s1, Student s2) {
+                           if(s1.getName() != null && s2.getName() != null && s1.getName().comareTo(s1.getName()) != 0) {
+                               return s1.getName().compareTo(s2.getName());
+                           } else {
+                             return s1.getAge().compareTo(s2.getAge());
+                          }
+                      }
+    );
+
+    Using Java 8(lambda expression) -
+
+    listOfStudent.sort((s1, s2) -> s1.age - s2.age);
+
+
+    Case 3:
+    class StudentComparator implements Comparator
+    {
+        public int compare (Student s1 Student s2)
+        {
+            // code to compare 2 students
+        }
+    }
+
+    usage:
+     Collections.sort(StudentList,new StudentComparator())

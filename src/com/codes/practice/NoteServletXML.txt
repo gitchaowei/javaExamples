@@ -1,0 +1,38 @@
+Web Project (Servlet, Web.xml)
+
+index.html:
+HTML form action”add” => call a servelet (AddServlet class extends HttpServlet)
+    <body>
+    <form action=”add”>
+    Enter number 1: <input type=”text” name=”num1”><br>
+    Enter number 2: <input type=”text” name=”num2”><br>
+    <input type=”submit”>
+    </body>
+
+AddServlet class
+
+    Public class AddServlet extends HttpServlet {
+        Public void service(HttpServletRequest req, HttpServletResponse res)
+        {
+            Int i = Integer.parseInt(req.getParameter(“num1”));
+            Int j = Integer.parseInt(req.getParameter(“num2”));
+            Int k = i +j;
+            //System.out.println(“result is “ + k);  // print it to console
+
+            //print out through Response
+            PrintWriter out = res.getWriter();
+            out.println(“result is “ + k);  // print it to console
+        }
+    }
+
+Web.xml:
+    <servlet>
+        <servlet-name>abc</servlet-name>
+        <servlet-class>com.telusko.AddServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>abc</servlet-name>
+        <url-pattern>/<url-pattern>
+    </servlet-mapping>
+

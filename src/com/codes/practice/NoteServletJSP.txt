@@ -1,0 +1,128 @@
+Create MAVEN Project including
+    POM.XML to include MySQL or ... DB jar file
+
+Webapp directory to create JSP dynamic page file for view with Servlet
+    (accept user request for data processing and send data to JSP)
+MVC  => Controller to accept requests from user (java class), Model to hold data (java class),
+        View to show data (JSP)
+
+Web server: Tomcat to start it first before run web application
+
+Connect application to Tomcat by setting from Application properties
+    (Target runtimes with Apache Tomcat checked)
+
+Index.jsp
+
+   <body>
+    <form action=”getAlien”>
+        <input type=”text” name=”aid”><br>
+        <input type=”submit”>
+    </body>
+
+Controller Class:
+
+class GetAlienController
+Servlet of Login
+
+@WebServlet("/Login")
+public class GetAlienController extends HttpServlet {
+    //doGet request to fitch data from server
+    //doPost request to submit data to server
+    //
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IO{
+        int aid = Integer.parseInt(req.getParameter("aid")); //aid is from index.jsp
+
+        // Alien class
+        //Alien alien = new Alien();
+
+        // Fetch data from DB
+        // 7 steps for JDBC from DAO layer: create AlienDao class (create/modify/delete/get Alien)
+        AlienDAO alienDao = new AlienDAO();
+        Alien a1 = alienDao.getAlien();
+
+/*        // pass alien to request
+        req.setAttribute("alien", a1);
+
+        // show Alien
+        RequestDispatcher rd = req.getRequestDispatcher("showAlien.jsp");
+        rd.forward(req, res);
+*/
+        // usually use Session instead above lines
+        HttpSession session = req.getSession();
+        session.setAttribute("alien", a1);
+        res.sendRidirect("showAlien.jsp");
+}
+
+showAlien.jsp:
+    <%@page input="com.telusko.web.model.Alien"%>
+    <body>
+     <%
+//     Alien a1 = (Alien)req.getAttribute("alien");
+     Alien a1 = (Alien)session.getAttribute("alien");
+     out.println(a1);
+
+     %>
+    </body>
+
+
+Web.xml file will do mapping
+
+Web.xml:
+    <servlet>
+        <servlet-name>GetAlienController</servlet-name>
+        <display-name>GetAlienController</display-name>
+        <discription> </discription>
+        <servlet-class>com.telusko.GetAlienController</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>GetAlienController</servlet-name>
+        <url-pattern>/getAlien<url-pattern>
+    </servlet-mapping>
+
+
+
+
+==========================another example================
+Servlet of Login
+
+@WebServlet("/Login")
+public class Login extends HttpServlet {
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IO{
+        String uname = req.getParameter("uname");
+        String password = req.getParameter("password");
+        if (uname.equals("telusko") && password.equals("learning") { // check DB
+            HttpSession session = req.getSession();
+            session.setAttribute("username", uname);
+            res.sendRidirect("welcome.jsp");
+        }
+        else {
+             res.sendRidirect("login.jsp");
+        }
+}
+
+@WebServlet("/Logout")
+public class Logout extends HttpServlet {
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IO{
+        HttpSession session = req.getSession();
+        session.removeAttribute("username");
+        session.invalidate();
+}
+
+Welcome.jsp
+
+<body>
+ <%
+ if (session.getAttribute("username")==null) {
+    res.sendRedirect("login.jsp");
+ }
+
+ %>
+ Welcome ${username}
+
+ <a href="videos.jsp">Videos here </a>
+ <form action="Logout">
+    <input type="submit" value="Logout">
+ </form>
+
+</body>

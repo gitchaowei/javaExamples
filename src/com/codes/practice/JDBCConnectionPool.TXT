@@ -1,0 +1,456 @@
+JDBC Connection Pool, Managed by pool manager
+
+When the connection pool server starts, it creates a predetermined number of [Connection] objects.
+A client application would then perform a lookup to retrieve a reference to a [DataSource] object that
+implements the [ConnectionPoolDataSource] interface.
+The client application would not need to make any special provisions to use the pooled data source;
+the code would be no different from code written for a non-pooled [DataSource].
+
+
+MySQL workbench:
+
+. CREATE DATABASE tutorialDb;
+. USE tutorialDb;
+. CREATE TABLE technical_editors (tech_id int(11) NOT NULL AUTO_INCREMENT, tech_username varchar(20) DEFAULT NULL, PRIMARY KEY (tech_id));
+. INSERT INTO technical_editors (tech_id, tech_username) VALUES (1, 'Java Code Geek');
+. INSERT INTO technical_editors (tech_id, tech_username) VALUES (2, 'Harry Potter');
+
+The following examples show how to use org.apache.commons.dbcp.DriverManagerConnectionFactory.
+
+Example 1:
+
+POM.XML:
+<dependency>
+        <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.41</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+            <version>1.4</version>
+        </dependency>
+
+Create a java class ConnectionPool.java:
+
+package com.jcg.jdbc.connection.pooling;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+import javax.sql.DataSource;
+
+import org.apache.commons.dbcp.ConnectionFactory;
+import org.apache.commons.dbcp.DriverManagerConnectionFactory;
+import org.apache.commons.dbcp.PoolableConnectionFactory;
+import org.apache.commons.dbcp.PoolingDataSource;
+import org.apache.commons.pool.impl.GenericObjectPool;
+
+public class ConnectionPool {
+
+    // JDBC Driver Name & Database URL
+    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    static final String JDBC_DB_URL = "jdbc:mysql://localhost:3306/tutorialDb";
+
+    // JDBC Database Credentials
+    static final String JDBC_USER = "root";
+    static final String JDBC_PASS = "admin@123";
+
+    private static GenericObjectPool gPool = null;
+
+    @SuppressWarnings("unused")
+    public DataSource setUpPool() throws Exception {
+        Class.forName(JDBC_DRIVER);
+
+        // Creates an Instance of GenericObjectPool That Holds Our Pool of Connections Object!
+        gPool = new GenericObjectPool();
+        gPool.setMaxActive(5);
+
+        // Creates a ConnectionFactory Object Which Will Be Use by the Pool to Create the Connection Object!
+        ConnectionFactory cf = new DriverManagerConnectionFactory(JDBC_DB_URL, JDBC_USER, JDBC_PASS);
+
+        // Creates a PoolableConnectionFactory That Will Wraps the Connection Object Created
+        // by the ConnectionFactory to Add Object Pooling Functionality!
+        PoolableConnectionFactory pcf = new PoolableConnectionFactory(cf, gPool, null, null, false, true);
+        return new PoolingDataSource(gPool);
+    }
+
+    public GenericObjectPool getConnectionPool() {
+        return gPool;
+    }
+
+    // This Method Is Used To Print The Connection Pool Status
+    private void printDbStatus() {
+        System.out.println("Max.: "
+                        + getConnectionPool().getMaxActive()
+                        + "; Active: "
+                        + getConnectionPool().getNumActive()
+                        + "; Idle: "
+                        + getConnectionPool().getNumIdle());
+    }
+
+    public static void main(String[] args) {
+        ResultSet rsObj = null;
+        Connection connObj = null;
+        PreparedStatement pstmtObj = null;
+        ConnectionPool jdbcObj = new ConnectionPool();
+        try {
+            DataSource dataSource = jdbcObj.setUpPool();
+            jdbcObj.printDbStatus();
+
+            // Performing Database Operation!
+            System.out.println("\n=====Making A New Connection Object For Db Transaction=====\n");
+            connObj = dataSource.getConnection();
+            jdbcObj.printDbStatus();
+
+            // Connection connObj
+            // PreparedStatement pstmtObj
+            // ResultSet rsObj
+            pstmtObj = connObj.prepareStatement("SELECT * FROM technical_editors");
+            rsObj = pstmtObj.executeQuery();
+            while (rsObj.next()) {
+                System.out.println("Username: " + rsObj.getString("tech_username"));
+            }
+            System.out.println("\n=====Releasing Connection Object To Pool=====\n");
+        } catch(Exception sqlException) {
+            sqlException.printStackTrace();
+        } finally {
+            try {
+                // Closing ResultSet Object
+                if(rsObj != null) {
+                    rsObj.close();
+                }
+                // Closing PreparedStatement Object
+                if(pstmtObj != null) {
+                    pstmtObj.close();
+                }
+                // Closing Connection Object
+                if(connObj != null) {
+                    connObj.close();
+                }
+            } catch(Exception sqlException) {
+                sqlException.printStackTrace();
+            }
+        }
+        jdbcObj.printDbStatus();
+    }
+}
+
+
+// check more examples from
+https://www.programcreek.com/java-api-examples/?api=org.apache.commons.dbcp.DriverManagerConnectionFactory
+
+Example 1:
+
+    @Override
+    public DataSource newDataSource (String driver, String connect, String login, String password) {
+        ObjectPool<Object> connectionPool = new GenericObjectPool<>(null, dsPoolsize, (dsPoolgrow ? GenericObjectPool.WHEN_EXHAUSTED_GROW : GenericObjectPool.WHEN_EXHAUSTED_BLOCK), 0);
+        ConnectionFactory	connectionFactory = new DriverManagerConnectionFactory (connect, login, password);
+
+        // THIS IS REQUIRED DUE TO INTERNAL SIDE EFFECTS, DO NOT REMOVE THIS (AGAIN)!
+        @SuppressWarnings("unused")
+        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory (connectionFactory, connectionPool, null, null, false, true);
+        log.out (Log.INFO, "nds", "New data source for " + driver + " using " + connect + " with " + login + " created (poolsize " + dsPoolsize + ", grow is " + dsPoolgrow + ")");
+        return new PoolingDataSource (connectionPool);
+    }
+
+Example 2:
+
+ public void setup( Properties prop ) {
+        this.prop=prop;
+
+        GenericObjectPool.Config conPoolCfg = new GenericObjectPool.Config();
+        conPoolCfg.maxActive = Integer.parseInt( prop.getProperty( "connectionPoolMaxSize", "15" ) );
+        conPoolCfg.maxIdle = Integer.parseInt( prop.getProperty( "connectionPoolMaxIdle", "8" ) );
+        conPoolCfg.maxWait = Integer.parseInt( prop.getProperty( "connectionPoolMaxWait", "60000" ) );
+        conPoolCfg.minIdle = Integer.parseInt( prop.getProperty( "connectionPoolMinSize", "2" ) );
+
+
+        ObjectPool connectionPool = new GenericObjectPool( null, conPoolCfg );
+        try {
+            Class.forName( prop.getProperty( "jdbcDriver" ) );
+        } catch( ClassNotFoundException e ) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
+
+        ConnectionFactory connectionFactory = new
+                DriverManagerConnectionFactory( prop.getProperty( "jdbcUrl" ),
+                prop.getProperty( "jdbcUser" ),
+                prop.getProperty( "jdbcPassword" ) );
+
+
+        new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
+
+        PoolingDataSource dataSource = new PoolingDataSource(connectionPool);
+
+        ds = dataSource;
+   }
+
+Example 3:
+
+public final static void initConnection(String address, String user, String password) throws ClassNotFoundException {
+	Class.forName("com.mysql.jdbc.Driver");
+	GenericObjectPool connectionPool = new GenericObjectPool(null);
+	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(address, user, password);
+	KeyedObjectPoolFactory keyed_factory = new StackKeyedObjectPoolFactory();
+	new PoolableConnectionFactory(connectionFactory, connectionPool, keyed_factory, null, false, true);
+	ds = new PoolingDataSource(connectionPool);
+}
+
+Example 4:
+
+public static DataSource buildDataSource(String user, String pass,
+        String driver, String url) {
+
+    DataSource ds;
+
+    try {
+        Class.forName(driver);
+    } catch (ClassNotFoundException ignore) {
+    }
+
+    GenericObjectPool connectionPool = new GenericObjectPool(null);
+  ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(
+                      url, user, pass);
+          PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(
+                      connectionFactory, connectionPool, null, null, false, true);
+
+  return new PoolingDataSource(connectionPool);
+}
+
+
+Example 5:
+
+    return new PoolingDataSource(connectionPool);
+ }
+
+
+   /**
+     * <p>
+     * Default Constructor
+     * </p>.
+     */
+    public DataSourceWorkflowRepositoryFactory() throws WorkflowException {
+        String jdbcUrl, user, pass, driver;
+
+        jdbcUrl = System
+                .getProperty("org.apache.oodt.cas.workflow.repo.datasource.jdbc.url");
+        user = System
+                .getProperty("org.apache.oodt.cas.workflow.repo.datasource.jdbc.user");
+        pass = System
+                .getProperty("org.apache.oodt.cas.workflow.repo.datasource.jdbc.pass");
+        driver = System
+                .getProperty("org.apache.oodt.cas.workflow.repo.datasource.jdbc.driver");
+
+        try {
+            Class.forName(driver);
+        } catch (ClassNotFoundException e) {
+            throw new WorkflowException("Cannot load driver: " + driver);
+        }
+
+        GenericObjectPool connectionPool = new GenericObjectPool(null);
+        ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(
+                jdbcUrl, user, pass);
+        PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(
+                connectionFactory, connectionPool, null, null, false, true);
+
+        dataSource = new PoolingDataSource(connectionPool);
+    }
+
+    //Example 6:
+        /**
+         * Instantiates a new JDBCConnectionFactory if required and creates a connections pool for every database.
+         * @return the instance of the singleton.
+         */
+        public void load () {
+            for (DatabaseConfiguration db : configuration.getDatabases()) {
+                l.debug("Registering Connection Pool for {}", db.getDatabase());
+                GenericObjectPool pool = new GenericObjectPool(null, db.getMaxConnections());
+                ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(db.toJdbcURL(), db.getUsername(), db.getPassword());
+                PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, pool, null, null, db.isReadOnly(), true);
+                poolableConnectionFactory.hashCode();
+                this.connectionPool.put(db.getDatabase(), pool);
+            }
+        }
+        // Example 7:
+        private DataSource setupDataSource(String driver, String connectURI,
+                                           String userName, String passwd) throws ClassNotFoundException {
+
+            // driver
+            Class.forName(driver);
+
+            //
+            // First, we'll need a ObjectPool that serves as the
+            // actual pool of connections.
+            //
+            // We'll use a GenericObjectPool instance, although
+            // any ObjectPool implementation will suffice.
+            //
+            GenericObjectPool connectionPool = new GenericObjectPool(null);
+            // 设置在getConnection时验证Connection是否有效
+            connectionPool.setTestOnBorrow(true);
+
+            //
+            // Next, we'll create a ConnectionFactory that the
+            // pool will use to create Connections.
+            // We'll use the DriverManagerConnectionFactory,
+            // using the connect string passed in the command line
+            // arguments.
+            //
+            ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(
+                    connectURI, userName, passwd);
+
+            // null can be used as parameter because this parameter is set in
+            // PoolableConnectionFactory when creating a new PoolableConnection
+            KeyedObjectPoolFactory statementPool = new GenericKeyedObjectPoolFactory(
+                    null);
+
+            //
+            // Now we'll create the PoolableConnectionFactory, which wraps
+            // the "real" Connections created by the ConnectionFactory with
+            // the classes that implement the pooling functionality.
+            //
+            new PoolableConnectionFactory(connectionFactory, connectionPool,
+                    statementPool, "select now()", false, true);
+
+            //
+            // Finally, we create the PoolingDriver itself,
+            // passing in the object pool we created.
+            //
+            PoolingDataSource dataSource = new PoolingDataSource(connectionPool);
+
+            return dataSource;
+        }
+
+
+    // Example 8:
+    @Override
+    public void configurationChanged() {
+        LOG.info("Begin JdbcRepository reconfiguring.");
+        JdbcRepositoryContext oldRepoContext = repoContext;
+        repoContext = new JdbcRepositoryContext(SqoopConfiguration.getInstance().getContext());
+
+        // reconfigure jdbc handler
+        String newJdbcHandlerClassName = repoContext.getHandlerClassName();
+        if (newJdbcHandlerClassName == null
+                || newJdbcHandlerClassName.trim().length() == 0) {
+            throw new SqoopException(RepositoryError.JDBCREPO_0001,
+                    newJdbcHandlerClassName);
+        }
+
+        String oldJdbcHandlerClassName = oldRepoContext.getHandlerClassName();
+        if (!newJdbcHandlerClassName.equals(oldJdbcHandlerClassName)) {
+            LOG.warn("Repository JDBC handler cannot be replaced at the runtime. " +
+                    "You might need to restart the server.");
+        }
+
+        // reconfigure jdbc driver
+        String newJdbcDriverClassName = repoContext.getDriverClass();
+        if (newJdbcDriverClassName == null
+                || newJdbcDriverClassName.trim().length() == 0) {
+            throw new SqoopException(RepositoryError.JDBCREPO_0003,
+                    newJdbcDriverClassName);
+        }
+
+        String oldJdbcDriverClassName = oldRepoContext.getDriverClass();
+        if (!newJdbcDriverClassName.equals(oldJdbcDriverClassName)) {
+            LOG.warn("Repository JDBC driver cannot be replaced at the runtime. " +
+                    "You might need to restart the server.");
+        }
+
+        // reconfigure max connection
+        connectionPool.setMaxActive(repoContext.getMaximumConnections());
+
+        // reconfigure the url of repository
+        String connectUrl = repoContext.getConnectionUrl();
+        String oldurl = oldRepoContext.getConnectionUrl();
+        if (connectUrl != null && !connectUrl.equals(oldurl)) {
+            LOG.warn("Repository URL cannot be replaced at the runtime. " +
+                    "You might need to restart the server.");
+        }
+
+        // if connection properties or transaction isolation option changes
+        boolean connFactoryChanged = false;
+
+        // compare connection properties
+        if (!connFactoryChanged) {
+            Properties oldProp = oldRepoContext.getConnectionProperties();
+            Properties newProp = repoContext.getConnectionProperties();
+
+            if (newProp.size() != oldProp.size()) {
+                connFactoryChanged = true;
+            } else {
+                for (Object key : newProp.keySet()) {
+                    if (!newProp.getProperty((String) key).equals(oldProp.getProperty((String) key))) {
+                        connFactoryChanged = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // compare the transaction isolation option
+        if (!connFactoryChanged) {
+            String oldTxOption = oldRepoContext.getTransactionIsolation().toString();
+            String newTxOption = repoContext.getTransactionIsolation().toString();
+
+            if (!newTxOption.equals(oldTxOption)) {
+                connFactoryChanged = true;
+            }
+        }
+
+        if (connFactoryChanged) {
+            // try to reconfigure connection factory
+            try {
+                LOG.info("Reconfiguring Connection Factory.");
+                Properties jdbcProps = repoContext.getConnectionProperties();
+
+                ConnectionFactory connFactory =
+                        new DriverManagerConnectionFactory(connectUrl, jdbcProps);
+
+                new PoolableConnectionFactory(connFactory, connectionPool, statementPool,
+                        handler.validationQuery(), false, false,
+                        repoContext.getTransactionIsolation().getCode());
+            } catch (IllegalStateException ex) {
+                // failed to reconfigure connection factory
+                LOG.warn("Repository connection cannot be reconfigured currently. " +
+                        "You might need to restart the server.");
+            }
+        }
+
+        // ignore the create schema option, because the repo url is not allowed to change
+
+        LOG.info("JdbcRepository reconfigured.");
+    }
+
+    // Example 9:
+    public static void openConnectionPool(String pool_name, String driver_class, String uri, String user, String pass, int max_active, int max_idle)
+            throws SQLException
+    {
+
+        Properties props = new Properties();
+        props.put("autoReconnect","true");
+        props.put("user",user);
+        props.put("password",pass);
+        props.put("socketTimeout", "15");
+
+        loadDriver(driver_class);
+        loadDriver("org.apache.commons.dbcp.PoolingDriver");
+
+
+        GenericObjectPool connectionPool = new GenericObjectPool(null);
+
+        connectionPool.setMaxActive(max_active);
+        connectionPool.setMaxIdle(max_idle);
+
+        ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(uri, props);
+
+        new PoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
+
+        PoolingDriver driver = (PoolingDriver) DriverManager.getDriver("jdbc:apache:commons:dbcp:");
+
+        driver.registerPool(pool_name,connectionPool);
+
+    }
